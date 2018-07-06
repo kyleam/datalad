@@ -9,7 +9,6 @@
 
 """
 
-from datalad.tests.utils import known_failure
 from datalad.tests.utils import known_failure_v6
 from datalad.tests.utils import known_failure_direct_mode
 
@@ -155,6 +154,14 @@ def test_uninstall_annex_file(path):
     ok_(not exists(opj(path, 'test-annex.dat')))
     ok_(not exists(opj(path, key_file)))
 
+    # remove file without dropping
+    ds.repo.repo.git.reset("--hard", "HEAD^")
+    ds.repo.get('test-annex.dat')
+    ok_file_under_git(ds.repo.path, 'test-annex.dat', annexed=True)
+    ds.remove(path='test-annex.dat', drop=False)
+    ok_(not exists(opj(path, 'test-annex.dat')))
+    ok_(exists(opj(path, key_file)))
+
 
 @known_failure_v6  # FIXME: git files end up in annex, therefore drop result is different
 @with_testrepos('.*basic.*', flavors=['clone'])
@@ -285,7 +292,6 @@ def test_uninstall_dataset(path):
 
 @with_tree({'one': 'test', 'two': 'test', 'three': 'test2'})
 @known_failure_direct_mode  #FIXME
-@known_failure  #FIXME
 def test_remove_file_handle_only(path):
     ds = Dataset(path).create(force=True)
     ds.add(os.curdir)
@@ -299,8 +305,8 @@ def test_remove_file_handle_only(path):
     eq_(rpath_one, realpath(opj(ds.path, 'two')))
     path_two = opj(ds.path, 'two')
     ok_(exists(path_two))
-    # remove one handle, should not affect the other
-    ds.remove('two', check=False, message="custom msg")
+    # remove one handle, should not affect the other when drop=False
+    ds.remove('two', drop=False, message="custom msg")
     eq_(ds.repo.repo.head.commit.message.rstrip(), "custom msg")
     eq_(rpath_one, realpath(opj(ds.path, 'one')))
     ok_(exists(rpath_one))

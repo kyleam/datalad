@@ -86,6 +86,14 @@ class Remove(Interface):
             constraints=EnsureStr() | EnsureNone()),
         recursive=recursion_flag,
         check=check_argument,
+        drop=Parameter(
+            args=("--no-drop",),
+            doc="""When removing a file, [CMD: don't drop CMD][PY: drop PY] its
+            content first. This option has no effect on subdataset removal,
+            which drops file content unless [CMD: --nocheck is given CMD][PY:
+            `check` is false PY].""",
+            action="store_false",
+            dest="drop"),
         save=nosave_opt,
         message=save_message_opt,
         if_dirty=if_dirty_opt,
@@ -99,6 +107,7 @@ class Remove(Interface):
             dataset=None,
             recursive=False,
             check=True,
+            drop=True,
             save=True,
             message=None,
             if_dirty='save-before'):
@@ -261,7 +270,7 @@ class Remove(Interface):
                     to_reporemove[ap['path']] = ap
             # avoid unnecessary git calls when there is nothing to do
             if to_reporemove:
-                if hasattr(ds.repo, 'drop'):
+                if drop and hasattr(ds.repo, 'drop'):
                     for r in _drop_files(ds, list(to_reporemove),
                                          check=check):
                         if r['status'] == 'error':
