@@ -261,9 +261,9 @@ class Remove(Interface):
                     to_reporemove[ap['path']] = ap
             # avoid unnecessary git calls when there is nothing to do
             if to_reporemove:
-                if check and hasattr(ds.repo, 'drop'):
+                if hasattr(ds.repo, 'drop'):
                     for r in _drop_files(ds, list(to_reporemove),
-                                         check=True):
+                                         check=check):
                         if r['status'] == 'error':
                             # if drop errored on that path, we can't remove it
                             to_reporemove.pop(r['path'], 'avoidKeyError')

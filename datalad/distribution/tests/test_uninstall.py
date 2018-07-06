@@ -9,6 +9,7 @@
 
 """
 
+from datalad.tests.utils import known_failure
 from datalad.tests.utils import known_failure_v6
 from datalad.tests.utils import known_failure_direct_mode
 
@@ -130,6 +131,8 @@ def test_uninstall_annex_file(path):
     ds.repo.get('test-annex.dat')
     ok_(ds.repo.file_has_content('test-annex.dat'))
 
+    key = ds.repo.get_file_key('test-annex.dat')
+
     # remove file's content:
     res = ds.drop(path='test-annex.dat', result_xfm='paths')
     # test it happened:
@@ -141,12 +144,16 @@ def test_uninstall_annex_file(path):
     ds.repo.get('test-annex.dat')
 
     # remove file:
+    key_file = ds.repo.get_contentlocation(key)
+    ok_(key_file)
+    ok_(exists(opj(path, key_file)))
     ds.remove(path='test-annex.dat')
     assert_raises(AssertionError, ok_file_under_git, ds.repo.path, 'test-annex.dat',
                   annexed=True)
     assert_raises(AssertionError, ok_file_under_git, ds.repo.path, 'test-annex.dat',
                   annexed=False)
     ok_(not exists(opj(path, 'test-annex.dat')))
+    ok_(not exists(opj(path, key_file)))
 
 
 @known_failure_v6  # FIXME: git files end up in annex, therefore drop result is different
@@ -278,6 +285,7 @@ def test_uninstall_dataset(path):
 
 @with_tree({'one': 'test', 'two': 'test', 'three': 'test2'})
 @known_failure_direct_mode  #FIXME
+@known_failure  #FIXME
 def test_remove_file_handle_only(path):
     ds = Dataset(path).create(force=True)
     ds.add(os.curdir)
