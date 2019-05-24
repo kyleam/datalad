@@ -304,7 +304,6 @@ class _CreateFailureGitLab(_FakeGitLab):
 @with_tempfile
 def test_fake_gitlab(path):
     from mock import patch
-    import datalad.distributed.create_sibling_gitlab
     ds = Dataset(path).create()
     with patch("datalad.distributed.create_sibling_gitlab.GitLabSite", _NewProjectGitLab):
         res = ds.create_sibling_gitlab(site='dummy', project='here', description='thisisit')
