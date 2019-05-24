@@ -66,7 +66,7 @@ class CreateSiblingGitlab(Interface):
     Subsequently, this site is identified by its name ('mygit' in the example
     above).
 
-    (Recursive) sibling creation for all, or a selected subset of subdatasets
+    (Recursive) sibling creation for all or a selected subset of subdatasets
     is supported. Three different project layouts for nested datasets are
     supported (see --layout):
 
@@ -86,7 +86,7 @@ class CreateSiblingGitlab(Interface):
       project inside a group, and all nested subdatasets are represented
       inside the group using a "flat" layout.
 
-    GitLab cannot host dataset content. However, in combination with
+    GitLab cannot host annexed dataset content. However, in combination with
     other data sources (and siblings), publishing a dataset to GitLab can
     facilitate distribution and exchange, while still allowing any dataset
     consumer to obtain actual data content from alternative sources.
@@ -125,7 +125,7 @@ class CreateSiblingGitlab(Interface):
             doc="""reference or root dataset. If no path constraints are given,
             a sibling for this dataset will be created. In this and all other
             cases, the reference dataset is also consulted for the GitLab
-            configuration, and desired project layout. If no dataset is given,
+            configuration and desired project layout. If no dataset is given,
             an attempt is made to identify the dataset based on the current
             working directory""",
             constraints=EnsureDataset() | EnsureNone()),
