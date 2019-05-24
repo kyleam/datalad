@@ -14,7 +14,6 @@ from six import (
 
 # this must import ok with and without gitlab
 from datalad.api import (
-    create,
     create_sibling_gitlab,
     Dataset,
 )

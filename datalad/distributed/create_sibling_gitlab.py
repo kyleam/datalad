@@ -41,11 +41,6 @@ from ..distribution.dataset import (
 )
 from ..dochelpers import exc_str
 
-# bound methods
-from ..distribution.siblings import Siblings
-from ..local.subdatasets import Subdatasets
-
-
 lgr = logging.getLogger('datalad.distributed.create_sibling_gitlab')
 
 known_layout_labels = ('hierarchy', 'collection', 'flat')
