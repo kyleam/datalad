@@ -34,6 +34,7 @@ from datalad.cmd import (
     WitlessRunner,
 )
 from datalad.consts import (
+    PRE_INIT_COMMIT_SHA,
     TIMESTAMP_FMT,
     WEB_HTML_DIR,
     WEB_META_LOG
@@ -132,6 +133,27 @@ class _RunnerAdapter(WitlessRunner):
             copy_fn(source, destination)
 
 
+def _register_dataset(ds, shell, url, path):
+    import base64
+    import requests
+
+    dsid = ds.id
+    if not dsid:
+        lgr.warning("Dataset %s does not have an ID.  Cannot register",
+                    ds)
+        return
+
+    url_encoded = base64.urlsafe_b64encode(url.encode()).decode()
+    # TODO: Replace with real endpoint.
+    endpoint = "http://127.0.0.1:5000/v1/datasets"
+    # TODO: Handle errors.
+    # TODO: Relocate and provide result record?
+    d_tok = requests.get(f"{endpoint}/{dsid}/urls/{url_encoded}/token").json()
+    shell("git -C {} update-ref {} {}"
+          .format(sh_quote(path), d_tok["ref"], PRE_INIT_COMMIT_SHA))
+    requests.post(f"{endpoint}/{dsid}/urls", json=d_tok)
+
+
 def _create_dataset_sibling(
         name,
         ds,
@@ -152,7 +174,8 @@ def _create_dataset_sibling(
         annex_wanted,
         annex_group,
         annex_groupwanted,
-        inherit
+        inherit,
+        register
 ):
     """Everyone is very smart here and could figure out the combinatorial
     affluence among provided tiny (just slightly over a dozen) number of options
@@ -323,6 +346,10 @@ def _create_dataset_sibling(
             # we are not coming in via SSH, hence cannot assume proper
             # setup for webserver access -> fix
             shell('git -C {} update-server-info'.format(sh_quote(remoteds_path)))
+
+        if register:
+            _register_dataset(ds, shell, target_url or ds_url, remoteds_path)
+
     else:
         # TODO -- we might still want to reconfigure 'shared' setting!
         pass
@@ -543,6 +570,11 @@ class CreateSibling(Interface):
             optional user-specified name for the html at publication
             target. defaults to `index.html` at dataset root""",
             constraints=EnsureBool() | EnsureStr()),
+        # TODO: instance should be configurable
+        register=Parameter(
+            args=("--register",),
+            action="store_true",
+            doc="""TODO"""),
         as_common_datasrc=as_common_datasrc,
         publish_depends=publish_depends,
         publish_by_default=publish_by_default,
@@ -569,6 +601,7 @@ class CreateSibling(Interface):
                  shared=None,
                  group=None,
                  ui=False,
+                 register=False,
                  as_common_datasrc=None,
                  publish_by_default=None,
                  publish_depends=None,
@@ -780,7 +813,8 @@ class CreateSibling(Interface):
                 annex_wanted,
                 annex_group,
                 annex_groupwanted,
-                inherit
+                inherit,
+                register
             )
             if not path:
                 # nothing new was created
