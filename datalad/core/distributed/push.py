@@ -138,11 +138,16 @@ class Push(Interface):
             combine all force modes ('all').""",
             constraints=EnsureChoice(
                 'all', 'gitpush', 'checkdatapresent', None)),
+        # TODO: This should probably just be an item in .git/config, perhaps
+        # set by create-sibling.
+        announce=Parameter(
+            args=("--announce",),
+            action="store_true",
+            doc=""),
         recursive=recursion_flag,
         recursion_limit=recursion_limit,
         jobs=jobs_opt,
     )
-
     # Desired features:
     # - let Git do it's thing (push multiple configured refs without the need
     #                          to specific anything on the command line
@@ -188,6 +193,7 @@ class Push(Interface):
             since=None,
             data='auto-if-wanted',
             force=None,
+            announce=False,
             recursive=False,
             recursion_limit=None,
             jobs=None):
@@ -261,6 +267,12 @@ class Push(Interface):
             yield from _push(
                 dspath, dsrecords, to, data, force, jobs, res_kwargs.copy(), pbars,
                 got_path_arg=True if path else False)
+            # TODO: Needs to be done inside _push() to properly handle inferred
+            # target, unless that handling is separated out and done here.
+            # Either way, need to inspect status of push before going forward
+            # with announcement.
+            if announce:
+                _announce_update(dspath, to)
             # take down progress bars for this dataset
             for i, ds in pbars.items():
                 log_progress(lgr.info, i, 'Finished push of %s', ds)
@@ -894,3 +906,29 @@ def _get_corresponding_remote_state(repo, to):
             #to = tracked_remote
             since = '%s/%s' % (tracked_remote, tracked_refspec)
     return since
+
+
+def _announce_update(dspath, target):
+    # TODO: Just handle registering the dataset here too rather than having
+    # create_sibling() do it?
+    import base64
+    import requests
+
+    ds = Dataset(dspath)
+    dsid = ds.id
+    if not dsid:
+        lgr.warning("Dataset %s does not have an ID.  Cannot register",
+                    ds)
+        return
+
+    url = ds.config.get("remote.{}.url".format(target))
+    if not url:
+        lgr.warning("No URL configured for %s remote of %s .  "
+                    "Nothing to announce.",
+                    target, dspath)
+    url_encoded = base64.urlsafe_b64encode(url.encode()).decode()
+    # TODO: Replace with real endpoint.
+    endpoint = "http://127.0.0.1:5000/v1/datasets"
+    # TODO: Handle errors.
+    # TODO: Relocate and provide result record?
+    requests.patch(f"{endpoint}/{dsid}/urls/{url_encoded}")
